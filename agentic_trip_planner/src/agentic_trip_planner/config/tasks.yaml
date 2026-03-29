@@ -1,0 +1,260 @@
+intent_mapping_task:
+  description: >
+    Analyze the user query and extract structured travel intent.
+
+    Extract:
+    - destination
+    - duration (days)
+    - budget category (low / moderate / luxury)
+    - travelers
+    - preferences
+
+    If missing, infer intelligently.
+
+  expected_output: >
+    {
+      "destination": "",
+      "duration": "",
+      "budget_category": "",
+      "preferences": [],
+      "travelers": ""
+    }
+  agent: intent_mapper
+
+
+research_task:
+  description: >
+    Gather travel data for {destination} for a {days}-day trip with {budget} budget.
+
+    Include:
+    - attractions
+    - weather overview
+    - hotels (budget/mid/luxury)
+    - transport options
+    - cost insights
+
+    Use Tavily tool efficiently.
+
+  expected_output: >
+    {
+      "destination_info": {},
+      "weather": {},
+      "hotels": [],
+      "flights": [],
+      "transport": [],
+      "costs": {}
+    }
+  agent: researcher
+
+
+destination_task:
+  description: >
+    Create a destination overview for {destination}.
+
+    Include:
+    - short intro
+    - top highlights
+    - best time to visit
+
+  expected_output: >
+    {
+      "overview": "",
+      "highlights": [],
+      "best_time_to_visit": ""
+    }
+  agent: destination_expert
+
+
+weather_task:
+  description: >
+    Provide weather insights for {destination} during the trip.
+
+    Include:
+    - summary
+    - travel advice
+
+  expected_output: >
+    {
+      "summary": "",
+      "forecast": [],
+      "travel_advice": []
+    }
+  agent: weather_agent
+
+
+budget_task:
+  description: >
+    Estimate budget for {destination} for {days} days under {budget} category.
+
+    IMPORTANT:
+    - Use local currency
+    - Convert to USD using tool
+    - Provide realistic breakdown
+
+  expected_output: >
+    {
+      "category": "",
+      "currency": "",
+      "daily_estimate": {"local": "", "usd": ""},
+      "total_estimate": {"local": "", "usd": ""},
+      "breakdown": {}
+    }
+  agent: budget_agent
+
+
+transport_task:
+  description: >
+    Suggest transport options for {destination}.
+
+    MUST return STRICT structured JSON:
+
+    {
+      "flights": [],
+      "local_transport": [
+        {
+          "mode": "name of transport",
+          "efficiency": "Low | Moderate | High",
+          "best_use_case": "when to use this transport"
+        }
+      ],
+      "recommendations": "overall travel suggestion"
+    }
+
+    STRICT RULES:
+    - Each transport MUST include mode, efficiency, best_use_case
+    - Do NOT skip any field
+    - Do NOT return incomplete objects
+    - Do NOT return only mode
+
+  expected_output: >
+    {
+      "flights": [],
+      "local_transport": [
+        {
+          "mode": "",
+          "efficiency": "",
+          "best_use_case": ""
+        }
+      ],
+      "recommendations": ""
+    }
+  agent: transport_agent
+
+
+hotel_task:
+  description: >
+    Recommend hotels in {destination} based on {budget} category.
+
+    MUST return STRICT structured JSON:
+
+    {
+      "budget": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ],
+      "moderate": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ],
+      "luxury": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ]
+    }
+
+    STRICT RULES:
+    - Each hotel MUST include name, location_advantage, price_range
+    - Do NOT return empty objects
+    - If data is limited, still generate realistic examples
+
+  expected_output: >
+    {
+      "budget": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ],
+      "moderate": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ],
+      "luxury": [
+        {
+          "name": "",
+          "location_advantage": "",
+          "price_range": ""
+        }
+      ]
+    }
+  agent: hotel_agent
+
+
+planner_task:
+  description: >
+    Create a {days}-day itinerary for {destination}.
+
+    STRICT:
+    - Morning / Afternoon / Evening per day
+    - Logical travel flow
+    - Use ONLY research data
+
+  expected_output: >
+    {
+      "itinerary": [
+        {
+          "day": 1,
+          "morning": "",
+          "afternoon": "",
+          "evening": ""
+        }
+      ]
+    }
+  agent: planner
+
+final_output_task:
+  description: >
+    Combine all outputs into ONE structured JSON.
+
+    STRICT MAPPING RULES:
+
+    - destination = output of destination_task
+    - weather = output of weather_task
+    - budget = output of budget_task
+    - hotels = output of hotel_task
+    - transport = EXACT output of transport_task (DO NOT MODIFY)
+    - itinerary = output of planner_task["itinerary"]
+
+    DO NOT leave any field empty.
+    DO NOT return {} if data exists.
+
+    Output ONLY valid JSON.
+
+  expected_output: >
+    {
+      "destination": {},
+      "weather": {},
+      "budget": {},
+      "hotels": {},
+      "transport": {
+        "flights": [],
+        "local_transport": [],
+        "recommendations": ""
+      },
+      "itinerary": []
+    }
+
+  agent: planner   # ✅ ADD THIS BACK
